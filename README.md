@@ -36,3 +36,14 @@ Este utilitário foi desenvolvido usando:
 * Python 3.5.1
 * Requests 2.9.1
 * python-decouple 3.0
+
+Suporte
+=======
+
+Esta é uma ferramenta em desenvolvimento e testes. Para qualquer problema ou dúvida, utilize Issues do repositório.
+
+Contato
+=======
+
+Caso queira entrar em contato pessoalmente, meu e-mail é *hrqnogueira* [at] *gmail* [dot] *com*.
+Tentarei responder assim que possível.
