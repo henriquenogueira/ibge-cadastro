@@ -1,4 +1,5 @@
 import os
+
 from json import dumps
 
 from data_spec import IBGE_ADDRESS_SPEC
