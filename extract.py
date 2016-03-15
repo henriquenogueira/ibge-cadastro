@@ -1,19 +1,32 @@
 import os
+from pathlib import Path
 
 from json import dumps
 
 from data_spec import IBGE_ADDRESS_SPEC
 
-BASE_DIR = os.path.dirname(__file__)
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-JSON_DIR = os.path.join(BASE_DIR, 'json')
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR.joinpath('data')
+JSON_DIR = BASE_DIR.joinpath('json')
 
+def load_cities_table():
+    """
+    Loads a dictionary into memory to resolve city names.
+    """
+    cities = {}
+    with open(str(BASE_DIR.joinpath('cidades.csv'))) as cities_file:
+        for code, city, _ in (c.split(';') for c in cities_file):
+            cities[code[:7]] = city
+    return cities
+
+CITIES = load_cities_table()
 
 class LineFieldSpec:
     """
     Specifies how a line field should be parsed on a fixed-width
     file format.
     """
+
     def __init__(self, name, initial_position, length):
 
         if initial_position < 1:
@@ -61,6 +74,7 @@ class LineSpec:
     """
     Keeps track of all fields expected for a line
     """
+
     def __init__(self, fields=[]):
         self._fields = fields
 
@@ -102,12 +116,11 @@ class LineSpec:
 
 
 def main():
-
     # Settings line specification based on the IBGE format
     line = LineSpec(fields=[LineFieldSpec(*info) for info in IBGE_ADDRESS_SPEC])
 
     # Getting list of states
-    states = [s for s in os.listdir(os.path.join(DATA_DIR)) if len(s) == 2 and s[0] != '.']
+    states = [s for s in os.listdir(str(DATA_DIR)) if len(s) == 2 and s[0] != '.']
 
     # Triggering parsing process for each state
     for state in states:
@@ -118,7 +131,7 @@ def extract_state(line, state):
     """
     Triggers parsing process for a given state
     """
-    files = os.listdir(os.path.join(DATA_DIR, state))
+    files = os.listdir(str(DATA_DIR.joinpath(state)))
     files = [f for f in files if '.json' not in f]
     for i, file in enumerate(files):
         print('State: {} - ({} / {})'.format(state, i + 1, len(files)), end=' ')
@@ -129,7 +142,7 @@ def extract_sector(file, line, state):
     """
     Browses all files for a given state
     """
-    file_path = os.path.join(DATA_DIR, state, file)
+    file_path = str(DATA_DIR.joinpath(state).joinpath(file))
     print('Processing file {}...'.format(file_path), end=' ')
     with open(file_path) as f:
         extract_file(f, file, line, state)
@@ -143,7 +156,7 @@ def extract_file(input_file, file, line, state):
     """
     sector_code = file.split('.')[0]
     json_filename = sector_code + '.json'
-    o_file_path = os.path.join(JSON_DIR, json_filename)
+    o_file_path = str(JSON_DIR.joinpath(json_filename))
     with open(o_file_path, 'w+') as o:
         process_line(input_file, line, o, sector_code, state)
 
@@ -152,19 +165,20 @@ def process_line(input_file, line, output_file, sector_code, state):
     try:
         for l in input_file:
             parsed = line.parse_line(l)
-            json = {'line_data': parsed, 'state:': state, 'filename': sector_code}
+            city = CITIES[sector_code[:7]]
+            json = {'line_data': parsed, 'state:': state, 'city': city, 'filename': sector_code}
             json_str = dumps(json)
             output_file.write(json_str + '\n')
 
     # Just keeping track of files that contain bizarre chars
     # (currently, there are three of them).
     except UnicodeError as e:
-        with open(os.path.join(BASE_DIR, 'bad_files.txt'), 'a+') as m:
+        with open(str(BASE_DIR.joinpath('bad_files.txt')), 'a+') as m:
             m.write('-----------------------------------------------\n')
             m.write('{}/{}.TXT -- ({} - {}) {}:\n'.format(state, sector_code, e.start, e.end, e))
             m.write('{}\n'.format(l[e.start - 10:e.end + 10]))
     except Exception as e:
-        with open(os.path.join(BASE_DIR, 'bad_files.txt'), 'a+') as m:
+        with open(str(BASE_DIR.joinpath('bad_files.txt')), 'a+') as m:
             m.write('-----------------------------------------------\n')
             m.write('{}/{}.TXT -- {}:\n'.format(state, sector_code, e))
 

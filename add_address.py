@@ -1,9 +1,9 @@
-import os
-from json import loads
+# -*- coding: utf-8 -*-
+from pathlib import Path
 
 from decouple import config
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = Path(__file__).resolve().parent
 BING_API_KEY = config('BING_API_KEY')
 
 # Making sure the correct request URL is set, according to
@@ -19,8 +19,10 @@ def get_request_url(address):
         return BASE_URL.format(address)
     return BASE_URL.format(address, BING_API_KEY)
 
+
 def main():
     pass
+
 
 if __name__ == '__main__':
     main()
